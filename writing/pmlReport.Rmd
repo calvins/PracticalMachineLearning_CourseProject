@@ -1,0 +1,21 @@
+---
+title: "pmlReport"
+author: "Calvin Seto"
+date: "November 5, 2015"
+output: html_document
+---
+
+TODO
+Course Project
+-The goal of the course project is given a set of training data, create a model that will predict what classe of exercise each test case is
+-use any of the variables to predict with
+-write a report describing how you built the model
+how you used cross validation
+what you think the expected out of sample error is
+why you made the choices you did
+
+-constrain the text of the write up to < 2,000 words
+and the number of figures to < 5
+-make a repo with a gh-pages branch so the compiled HTML file can be viewed online
+
+

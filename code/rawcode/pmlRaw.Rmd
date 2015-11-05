@@ -1,0 +1,126 @@
+---
+title: "pmlRaw"
+author: "Calvin Seto"
+date: "November 5, 2015"
+output: pdf_document
+---
+
+The test data set seems not to have any #DIV/0! values in it.
+```{r}
+pmlTest0 <- read.csv("pml-testing.csv")
+sum(is.na(pmlTest0)) # 2,000
+pmlTest1 <- read.csv("pml-testing.csv", stringsAsFactors = FALSE, na.strings = c("#DIV/0!","","NA"))
+sum(is.na(pmlTest1)) # 2,000
+```
+
+Use stringsAsFactors because there are variables with numeric that are coming over as factors.
+Use na.strings to convert #DIV/0!, "", and NA to NA
+```{r}
+pmlTrain0 <- read.csv("pml-training.csv")
+sum(is.na(pmlTrain0)) # 1,287,472 the DIV/0! values are still here
+pmlTrain1 <- read.csv("pml-training.csv", stringsAsFactors = FALSE, na.strings = c("#DIV/0!","","NA"))
+sum(is.na(pmlTrain1)) # 1,925,102 na.strings will convert the strings you specify to NA
+```
+
+Verify the #DIV/0! and empty strings are NA
+```{r}
+sum(pmlTrain1=='#DIV/0!', na.rm=TRUE)
+sum(pmlTest1=='#DIV/0!', na.rm=TRUE)
+sum(pmlTrain1=='', na.rm=TRUE)
+sum(pmlTest1=='', na.rm=TRUE)
+```
+
+The NA values
+```{r}
+sum(is.na(pmlTrain1)) # 1,925,102
+sum(is.na(pmlTest1)) # 2,000
+```
+
+There are no complete cases in pmlTest0
+When I use complete.cases with pmlTrain0, the #DIV/0! values remain!
+```{r}
+goodTrain0 <- complete.cases(pmlTrain0)
+dim(pmlTrain0[goodTrain0,]) # 406 160
+pmlTrain2 <- pmlTrain0[goodTrain0,]
+
+goodTest0 <- complete.cases(pmlTest0)
+dim(pmlTest0[goodTest0,]) # 0 160
+```
+
+There are no complete cases in pmlTrain1 nor the pmlTest1
+```{r}
+goodTrain1 <- complete.cases(pmlTrain1)
+dim(pmlTrain1[goodTrain1,]) # 0 160
+
+goodTest1 <- complete.cases(pmlTest1)
+dim(pmlTest1[goodTest1,]) # 0 160
+```
+
+This function uses all and is.na to test pmlTrain1 and the results showed 6 columns that were all NA
+```{r}
+sapply(pmlTrain1, function(x)all(is.na(x)))
+sum(is.na(pmlTrain1[,"kurtosis_yaw_belt"])) # 19622
+sum(is.na(pmlTrain1[,"skewness_yaw_belt"])) # 19622
+sum(is.na(pmlTrain1[,"kurtosis_yaw_dumbbell"])) # 19622
+sum(is.na(pmlTrain1[,"skewness_yaw_dumbbell"])) # 19622
+sum(is.na(pmlTrain1[,"kurtosis_yaw_forearm"])) # 19622
+sum(is.na(pmlTrain1[,"skewness_yaw_forearm"])) # 19622
+
+```
+
+# this returned a bunch of columns where sum was > 19000
+```{r}
+pmlTrain1MissingCounts <- sapply(pmlTrain1, function(x)sum(is.na(x)))
+colNames <- pmlTrain1MissingCounts[pmlTrain1MissingCounts==0]
+
+```
+
+
+
+
+
+
+This function uses all and is.na to test pmlTest1 and the results showed 100 columns that were all NA
+```{r}
+sapply(pmlTest1, function(x)all(is.na(x)))
+
+```
+
+
+which(is.na(pmlTrain))
+
+sum(is.na(pmlTrain[,"avg_yaw_forearm"]))
+
+sum(is.na(pmlTrain))
+
+
+set.seed(32343)
+modelFit <- train(classe ~.,data=pmlGood, method="glm")
+modelFit
+
+
+# SPAM Example in Lecture
+library(caret); library(kernlab); data(spam)
+inTrain <- createDataPartition(y=spam$type,
+                               p=0.75, list=FALSE)
+training <- spam[inTrain,]
+testing <- spam[-inTrain,]
+dim(training)
+set.seed(32343)
+modelFit <- train(type ~.,data=training, method="glm")
+modelFit
+
+
+answers = rep("A", 20)
+pml_write_files(answers)
+
+
+x <- c(1, 2, NA, 4, NA, 5)
+y <- c("a", NA, "b", "d", NA, "f")
+
+good <- complete.cases(x,y)
+
+x[good]
+y[good]
+
+
