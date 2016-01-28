@@ -1,0 +1,100 @@
+---
+title: "Random Forest"
+author: "Calvin Seto"
+date: "January 14, 2016"
+output: pdf_document
+---
+
+# Random Forest
+mtry = number of variables randomly sampled as candidates at each split
+Defaults: Classification sqrt(p) Regression p/3 where p = number of variables
+
+```{r cache=TRUE}
+library(caret)
+
+# setwd("~/Dropbox/jhudatascience/8_Practical_Machine_Learning/CourseProject")
+
+setwd("C:/Users/Calvin/Calvinsbiz/Dropbox/jhudatascience/8_Practical_Machine_Learning/CourseProject")
+
+pmlTrain1 <- read.csv("data/pml-training.csv", stringsAsFactors = FALSE, na.strings = c("#DIV/0!","","NA"))
+
+pmlTrain1MissingCounts <- sapply(pmlTrain1, function(x)sum(is.na(x)))
+pmlTrain1Complete <- pmlTrain1MissingCounts[pmlTrain1MissingCounts==0]
+pmlTrain2 <- pmlTrain1[,names(pmlTrain1Complete)]
+
+inTrain <- createDataPartition(y=pmlTrain2$classe,
+                              p=0.75, list=FALSE)
+training <- pmlTrain2[inTrain,]
+testing <- pmlTrain2[-inTrain,]
+
+predictors <- training[,8:59]
+outcome <- as.factor(training[,60])
+
+# configure parallel
+library(parallel)
+library(doParallel)
+cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
+
+
+# seed
+set.seed(168)
+
+# default is bootstrap
+fitRFControl <- trainControl(method="cv",
+                             number=10
+)
+
+# fitRFGrid <- expand.grid(mtry=
+# )
+
+"Start Time "; Sys.time()
+fitRF <- train(x=predictors,
+             y=outcome,
+             data=training,
+             method="rf",
+             trControl=fitRFControl
+)
+"End Time "; Sys.time()
+
+stopCluster(cluster)
+
+# show model summary
+fitRF
+
+# What is this for?
+# it seems to show all folds and accuracy, Kappa, and fold number for cross-validation process
+# fitRF$resample
+
+# Make predictions and make table
+predictions <- predict(fitRF, newdata=testing)
+
+# create confusion matrix
+confusionMatrix(predictions, testing$classe)
+
+# this creates confusion matrix also
+# testing$predRight <- predictions==testing$classe
+# table(predictions,testing$classe)
+
+# plot confusion matrix
+# require(ggplot2)
+# input.matrix <- data.matrix(table(predictions,testing$classe))
+# input.matrix <- data.frame(A=c(1394,1,0,0,0), B=c(3,946,0,0,0), C=c(0,9,846,0,0), D=c(0,0,13,791,0), E=c(0,0,0,1,900))
+# input.matrix <- data.matrix(input.matrix)
+# require(tuneR)
+# input.matrix.normalized <- normalize(input.matrix)
+# colnames(input.matrix) <- c("A","B","C","D","E")
+# rownames(input.matrix) <- colnames(input.matrix)
+# confusion <- as.data.frame(as.table(input.matrix))
+# plot <- ggplot(confusion)
+# plot + geom_tile(aes(x=Var1, y=Var2, fill=Freq)) + scale_x_discrete(name="Actual Class") + scale_y_discrete("Predicted Class") + scale_fill_gradient(breaks=seq(from=-.5, to=4, by=.2)) + labs(fill="Normalized\nFrequency")
+
+pmlTest0 <- read.csv("data/pml-testing.csv")
+pmlTest0MissingCounts <- sapply(pmlTest0, function(x)sum(is.na(x)))
+colNamesTest <- pmlTest0MissingCounts[pmlTest0MissingCounts==0]
+pmlTest1 <- pmlTest0[,names(colNamesTest)]
+
+predictionsFinal <- predict(fitRF, newdata=pmlTest1)
+
+```
+

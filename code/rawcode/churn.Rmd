@@ -1,0 +1,136 @@
+---
+title: "Untitled"
+author: "Calvin Seto"
+date: "January 7, 2016"
+output: html_document
+---
+
+library(caret)
+library(C50)
+library(gbm)
+
+data(churn)
+str(churnTrain)
+
+predictors <- names(churnTrain)[names(churnTrain) != "churn"]
+
+numerics <- c("account_length", "total_day_calls", "total_night_calls")
+## Determine means and sd's
+procValues <- preProcess(churnTrain[,numerics], method = c("center", "scale", "YeoJohnson"))
+
+## Use the predict methods to do the adjustments
+trainScaled <- predict(procValues, churnTrain[,numerics])
+testScaled  <- predict(procValues, churnTest[,numerics])
+
+# The gbm function does not accept factor response values so we
+# will make a copy and modify the outcome variable
+forGBM <- churnTrain
+forGBM$churn <- ifelse(forGBM$churn == "yes", 1, 0)
+
+Sys.time()
+gbmFit <- gbm(formula = churn ~ .,        # Use all predictors
+               distribution = "bernoulli", # For classification
+               data = forGBM,
+               n.trees = 2000,
+               interaction.depth = 7,
+               shrinkage = 0.01,
+               verbose = FALSE)
+Sys.time()
+# 2000 boosting iterations
+# How many splits in each tree
+# learning rate
+# Do not print the details
+
+# using objects
+gbmTune <- train(x = churnTrain[,predictors],
+                  y= churnTrain$churn,
+                  method = "gbm")
+
+# or, using the formula interface
+gbmTune <- train(churn ~ ., data = churnTrain, method = "gbm")
+gbmTune <- train(churn ~ ., data = churnTrain,
+                 method = "gbm",
+                 verbose = FALSE)
+
+# using training options
+Sys.time()
+ctrl <- trainControl(method = "repeatedcv",
+                     repeats = 5)
+gbmTune <- train(churn ~ ., data = churnTrain,
+                 method = "gbm",
+                 verbose = FALSE,
+                 trControl = ctrl)
+Sys.time()
+
+# using different performance metrics
+Sys.time()
+ctrl <- trainControl(method = "repeatedcv", repeats = 5,
+                     classProbs = TRUE,
+                     summaryFunction = twoClassSummary)
+gbmTune <- train(churn ~ ., data = churnTrain,
+                 method = "gbm",
+                 metric = "ROC",
+                 verbose = FALSE,
+                 trControl = ctrl)
+Sys.time()
+
+# expanding the search grid
+Sys.time()
+ctrl <- trainControl(method = "repeatedcv", repeats = 5,
+                     classProbs = TRUE,
+                     summaryFunction = twoClassSummary)
+grid <- expand.grid(interaction.depth = seq(1, 7, by = 2),
+                    n.trees = seq(100, 1000, by = 50),
+                    shrinkage = c(0.01, 0.1))
+gbmTune <- train(churn ~ ., data = churnTrain,
+                 method = "gbm",
+                 metric = "ROC",
+                 tuneGrid = grid,
+                 verbose = FALSE,
+                 trControl = ctrl)
+Sys.time()
+                 
+# Running the Model
+library(caret)
+library(gbm)
+library(pROC)
+library(doMC)
+registerDoMC(4)
+
+data(churn)
+str(churnTrain)
+
+predictors <- names(churnTrain)[names(churnTrain) != "churn"]
+
+# this takes about 29 min
+Sys.time()
+grid <- expand.grid(interaction.depth = seq(1, 7, by = 2),
+                    n.trees = seq(100, 1000, by = 50),
+                    shrinkage = c(0.01, 0.1),
+                    n.minobsinnode = 10)
+ctrl <- trainControl(method = "repeatedcv", repeats = 5,
+                     summaryFunction = twoClassSummary,
+                     classProbs = TRUE)
+set.seed(1)
+gbmTune <- train(churn ~ ., data = churnTrain,
+                  method = "gbm",
+                  metric = "ROC",
+                  tuneGrid = grid,
+                  verbose = FALSE,
+                  trControl = ctrl)
+Sys.time()
+
+ggplot(gbmTune) + theme(legend.position = "top")                 
+                 
+gbmPred <- predict(gbmTune, churnTest)
+str(gbmPred)
+
+gbmProbs <- predict(gbmTune, churnTest, type = "prob")
+str(gbmProbs)
+
+confusionMatrix(gbmPred, churnTest$churn)
+
+rocCurve <- roc(response = churnTest$churn,
+                 predictor = gbmProbs[, "yes"],
+                 levels = rev(levels(churnTest$churn)))
+rocCurve

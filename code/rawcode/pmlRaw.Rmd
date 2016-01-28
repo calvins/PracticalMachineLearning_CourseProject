@@ -1,126 +1,418 @@
 ---
 title: "pmlRaw"
 author: "Calvin Seto"
-date: "November 5, 2015"
-output: pdf_document
+date: "January 4, 2016"
+output: html_document
 ---
 
-The test data set seems not to have any #DIV/0! values in it.
-```{r}
-pmlTest0 <- read.csv("pml-testing.csv")
-sum(is.na(pmlTest0)) # 2,000
-pmlTest1 <- read.csv("pml-testing.csv", stringsAsFactors = FALSE, na.strings = c("#DIV/0!","","NA"))
-sum(is.na(pmlTest1)) # 2,000
+# Data Processing
+The test set has 20 observations of 160 variables.  Use sapply and a function using all and is.na to test data frame, pmlTest0 and find any column that contained only missing values.
+The following algorithm will select variables with data for every observation in the data set.
+Create a vector of missing value counts in the data frame, pmlTest0 and use it to create a vector of missing value count = 0, i.e. vector of pmlTest0 variables with no missing values, which is used to create the subset pmlTest1.
+```{r cache=TRUE}
+setwd("~/Dropbox/jhudatascience/8_Practical_Machine_Learning/CourseProject")
+pmlTest0 <- read.csv("data/pml-testing.csv")
+pmlTest0MissingCounts <- sapply(pmlTest0, function(x)sum(is.na(x)))
+colNamesTest <- pmlTest0MissingCounts[pmlTest0MissingCounts==0]
+pmlTest1 <- pmlTest0[,names(colNamesTest)]
 ```
 
-Use stringsAsFactors because there are variables with numeric that are coming over as factors.
-Use na.strings to convert #DIV/0!, "", and NA to NA
-```{r}
-pmlTrain0 <- read.csv("pml-training.csv")
-sum(is.na(pmlTrain0)) # 1,287,472 the DIV/0! values are still here
-pmlTrain1 <- read.csv("pml-training.csv", stringsAsFactors = FALSE, na.strings = c("#DIV/0!","","NA"))
-sum(is.na(pmlTrain1)) # 1,925,102 na.strings will convert the strings you specify to NA
+The training set has 19,622 observations of 160 variables.  Numeric variables are coming over as factors.  There are missing values and Excel divide by zero errors.
+Use stringsAsFactors=FALSE and na.strings = c("#DIV/0!","","NA") to fix numeric variables and convert #DIV/0!, "", and NA to NA.
+```{r cache=TRUE}
+setwd("~/Dropbox/jhudatascience/8_Practical_Machine_Learning/CourseProject")
+pmlTrain0 <- read.csv("data/pml-training.csv")
+str(pmlTrain0)
+sum(is.na(pmlTrain0)) # 1,287,472 the DIV/0! values are here
+pmlTrain1 <- read.csv("data/pml-training.csv", stringsAsFactors = FALSE, na.strings = c("#DIV/0!","","NA"))
+sum(is.na(pmlTrain1)) # 1,925,102 the DIV/0! values are converted to NA properly
 ```
 
-Verify the #DIV/0! and empty strings are NA
-```{r}
-sum(pmlTrain1=='#DIV/0!', na.rm=TRUE)
-sum(pmlTest1=='#DIV/0!', na.rm=TRUE)
-sum(pmlTrain1=='', na.rm=TRUE)
-sum(pmlTest1=='', na.rm=TRUE)
-```
-
-The NA values
-```{r}
-sum(is.na(pmlTrain1)) # 1,925,102
-sum(is.na(pmlTest1)) # 2,000
-```
-
-There are no complete cases in pmlTest0
-When I use complete.cases with pmlTrain0, the #DIV/0! values remain!
-```{r}
-goodTrain0 <- complete.cases(pmlTrain0)
-dim(pmlTrain0[goodTrain0,]) # 406 160
-pmlTrain2 <- pmlTrain0[goodTrain0,]
-
-goodTest0 <- complete.cases(pmlTest0)
-dim(pmlTest0[goodTest0,]) # 0 160
-```
-
-There are no complete cases in pmlTrain1 nor the pmlTest1
-```{r}
-goodTrain1 <- complete.cases(pmlTrain1)
-dim(pmlTrain1[goodTrain1,]) # 0 160
-
-goodTest1 <- complete.cases(pmlTest1)
-dim(pmlTest1[goodTest1,]) # 0 160
-```
-
-This function uses all and is.na to test pmlTrain1 and the results showed 6 columns that were all NA
-```{r}
-sapply(pmlTrain1, function(x)all(is.na(x)))
-sum(is.na(pmlTrain1[,"kurtosis_yaw_belt"])) # 19622
+Use sapply and a function using all and is.na to test data frame, pmlTrain1 and find any column that contained only missing values.  This resulted in 6 columns: kurtosis_yaw_belt, skewness_yaw_belt, kurtosis_yaw_dumbbell, skewness_yaw_dumbbell, kurtosis_yaw_forearm, and skewness_yaw_forearm.
+```{r cache=TRUE}
+sapply(pmlTrain1, function(x)all(is.na(x))) #6 variables contain all NA
+sum(is.na(pmlTrain1[,"kurtosis_yaw_belt"])) # 19622 count to confirm
 sum(is.na(pmlTrain1[,"skewness_yaw_belt"])) # 19622
 sum(is.na(pmlTrain1[,"kurtosis_yaw_dumbbell"])) # 19622
 sum(is.na(pmlTrain1[,"skewness_yaw_dumbbell"])) # 19622
 sum(is.na(pmlTrain1[,"kurtosis_yaw_forearm"])) # 19622
 sum(is.na(pmlTrain1[,"skewness_yaw_forearm"])) # 19622
-
 ```
 
-# this returned a bunch of columns where sum was > 19000
-```{r}
+The following algorithm will select variables with data for every observation in the data set.
+Create a vector of missing value counts in the data frame, pmlTrain1 and use it to create a vector of missing value count = 0, i.e. vector of pmlTrain1 variables with no missing values, which is used to create the subset pmlTrain2.
+```{r cache=TRUE}
 pmlTrain1MissingCounts <- sapply(pmlTrain1, function(x)sum(is.na(x)))
-colNames <- pmlTrain1MissingCounts[pmlTrain1MissingCounts==0]
-
+pmlTrain1Complete <- pmlTrain1MissingCounts[pmlTrain1MissingCounts==0]
+pmlTrain2 <- pmlTrain1[,names(pmlTrain1Complete)]
 ```
 
-
-
-
-
-
-This function uses all and is.na to test pmlTest1 and the results showed 100 columns that were all NA
-```{r}
-sapply(pmlTest1, function(x)all(is.na(x)))
-
+This code verifies that the processed training and testing data sets are the same except for the problem_id variable in the testing set and the classe variable in the training set.  We've reduced the 160 variables to 60 variables. 
+```{r cache=TRUE}
+setequal(names(pmlTest1),names(pmlTrain2))
+setdiff(names(pmlTest1),names(pmlTrain2))
+setdiff(names(pmlTrain2),names(pmlTest1))
+intersect(names(pmlTest1),names(pmlTrain2))
 ```
 
+# Exploratory Data Analysis
+1"X" (observation ID)
+2"user_name" "carlitos" "pedro"    "adelmo"   "charles"  "eurico"   "jeremy"
+3"raw_timestamp_part_1" 1322832937
+4"raw_timestamp_part_2" 204334
+5"cvtd_timestamp" 02/12/2011 13:35
+sort(unique(pmlTrain2$cvtd_timestamp))
+"02/12/2011 13:32" "02/12/2011 13:33" "02/12/2011 13:34" "02/12/2011 13:35" 
+"02/12/2011 14:56" "02/12/2011 14:57" "02/12/2011 14:58" "02/12/2011 14:59"
+"05/12/2011 11:23" "05/12/2011 11:24" "05/12/2011 11:25"
+"05/12/2011 14:22" "05/12/2011 14:23" "05/12/2011 14:24"
+"28/11/2011 14:13" "28/11/2011 14:14" "28/11/2011 14:15"
+"30/11/2011 17:10" "30/11/2011 17:11" "30/11/2011 17:12"
+-4 days (Dec 2 and 5 of 2011 Nov 28 and 30 of 2011)
+-6 attempts
+Dec 2 and 5 of 2011 13:32 to 13:35, 14:56 to 14:59, 11:23 to 11:25, 14:22 to 14:24
+Nov 28 and 30 of 2011 14:13 to 14:15, 17:10 to 17:12
 
-which(is.na(pmlTrain))
+6/new_window" no yes
+7"num_window" 1-864           
+A sliding window approach was used for feature extraction.
+Different lengths from 0.5 sec to 2.5 sec, with 0.5 sec overlap
+Resulting in total 96 derived feature sets.
 
-sum(is.na(pmlTrain[,"avg_yaw_forearm"]))
+Sliding Windows are an approach to the sequential supervised learning problem. mlsd-ssspr.pdf
 
-sum(is.na(pmlTrain))
+There are 13 variables for belt, arm, dumbbell, and forearm. 13x4=52.
+names(pmlTrain2[8:20])
+names(pmlTrain2[21:33])
+names(pmlTrain2[34:46])
+names(pmlTrain2[47:59])
 
+"roll_belt"           
+"pitch_belt"           "yaw_belt"             "total_accel_belt"     "gyros_belt_x"        
+"gyros_belt_y"         "gyros_belt_z"         "accel_belt_x"         "accel_belt_y"        
+"accel_belt_z"         "magnet_belt_x"        "magnet_belt_y"        "magnet_belt_z"       
 
-set.seed(32343)
-modelFit <- train(classe ~.,data=pmlGood, method="glm")
-modelFit
+"roll_arm"             "pitch_arm"            "yaw_arm"              "total_accel_arm"     
+"gyros_arm_x"          "gyros_arm_y"          "gyros_arm_z"          "accel_arm_x"         
+"accel_arm_y"          "accel_arm_z"          "magnet_arm_x"         "magnet_arm_y"        
+"magnet_arm_z"
 
+"roll_dumbbell"        "pitch_dumbbell"       "yaw_dumbbell"        
+"total_accel_dumbbell" "gyros_dumbbell_x"     "gyros_dumbbell_y"     "gyros_dumbbell_z"    
+"accel_dumbbell_x"     "accel_dumbbell_y"     "accel_dumbbell_z"     "magnet_dumbbell_x"   
+"magnet_dumbbell_y"    "magnet_dumbbell_z"
 
-# SPAM Example in Lecture
-library(caret); library(kernlab); data(spam)
-inTrain <- createDataPartition(y=spam$type,
+"roll_forearm"         "pitch_forearm"       
+"yaw_forearm"          "total_accel_forearm"  "gyros_forearm_x"      "gyros_forearm_y"     
+"gyros_forearm_z"      "accel_forearm_x"      "accel_forearm_y"      "accel_forearm_z"     
+"magnet_forearm_x"     "magnet_forearm_y"     "magnet_forearm_z"
+
+60 "classe" or "problem_id"
+
+# Data Splitting
+```{r cache=TRUE}
+library(caret);
+inTrain <- createDataPartition(y=pmlTrain2$classe,
                                p=0.75, list=FALSE)
-training <- spam[inTrain,]
-testing <- spam[-inTrain,]
+training <- pmlTrain2[inTrain,]
+testing <- pmlTrain2[-inTrain,]
 dim(training)
-set.seed(32343)
-modelFit <- train(type ~.,data=training, method="glm")
-modelFit
+```
 
 
-answers = rep("A", 20)
-pml_write_files(answers)
+data exploration plotting predictors and looking for patterns, imbalance, outliers, unexplained groups, skewed variables
+-summary of predictors min, max, mean, median, quartiles
+-build training and testing set and explore training only and leave testing as hold out set
+-featurePlot show outcome and predictors scatterplots
+-qplot scatterplot of outcome and predictor (add color by variables; add regression smoothers to see trends)
+-make numbers into categories or factors with cut2 plot with plot (add boxplots and overlay points)
+-tables on factors and predictor showing counts or proportions prop.table
+-density plots for continuous predictors to see where the bulk of the data is color by belt, arm, dumbbell, and forearm?
+
+# table of classe in training
+   A    B    C    D    E 
+4185 2848 2567 2412 2706 
+
+```{r cache=TRUE}
+summary(as.factor(training$classe))
+```
+
+# scatterplot of important variables colored by classe
+```{r}
+qplot(x=roll_belt, y=yaw_belt,data=training,colour=classe)
+qplot(x=roll_belt, y=pitch_belt,data=training,colour=classe)
+qplot(x=pitch_belt, y=yaw_belt,data=training,colour=classe)
+qplot(x=roll_belt, y=magnet_dumbbell_z,data=training,colour=classe)
+qplot(x=roll_belt, y=pitch_forearm,data=training,colour=classe)
+```
+
+# density plot belt predictors by classe
+```{r cache=TRUE}
+qplot(roll_belt,colour=classe,data=training,geom="density")
+qplot(pitch_belt,colour=classe,data=training,geom="density")
+qplot(yaw_belt,colour=classe,data=training,geom="density")
+qplot(total_accel_belt,colour=classe,data=training,geom="density")
+qplot(gyros_belt_x,colour=classe,data=training,geom="density")
+qplot(gyros_belt_y,colour=classe,data=training,geom="density")
+qplot(gyros_belt_z,colour=classe,data=training,geom="density")
+qplot(accel_belt_x,colour=classe,data=training,geom="density")
+qplot(accel_belt_y,colour=classe,data=training,geom="density")
+qplot(accel_belt_z,colour=classe,data=training,geom="density")
+qplot(magnet_belt_x,colour=classe,data=training,geom="density")
+qplot(magnet_belt_y,colour=classe,data=training,geom="density")
+qplot(magnet_belt_z,colour=classe,data=training,geom="density")
+```
+
+# density plot arm predictors by classe
+```{r cache=TRUE}
+qplot(roll_arm,colour=classe,data=training,geom="density")
+qplot(pitch_arm,colour=classe,data=training,geom="density")
+qplot(yaw_arm,colour=classe,data=training,geom="density")
+qplot(total_accel_arm,colour=classe,data=training,geom="density")
+qplot(gyros_arm_x,colour=classe,data=training,geom="density")
+qplot(gyros_arm_y,colour=classe,data=training,geom="density")
+qplot(gyros_arm_z,colour=classe,data=training,geom="density")
+qplot(accel_arm_x,colour=classe,data=training,geom="density")
+qplot(accel_arm_y,colour=classe,data=training,geom="density")
+qplot(accel_arm_z,colour=classe,data=training,geom="density")
+qplot(magnet_arm_x,colour=classe,data=training,geom="density")
+qplot(magnet_arm_y,colour=classe,data=training,geom="density")
+qplot(magnet_arm_z,colour=classe,data=training,geom="density")
+```
+
+# density plot dumbbell predictors by classe
+```{r cache=TRUE}
+qplot(roll_dumbbell,colour=classe,data=training,geom="density")
+qplot(pitch_dumbbell,colour=classe,data=training,geom="density")
+qplot(yaw_dumbbell,colour=classe,data=training,geom="density")
+qplot(total_accel_dumbbell,colour=classe,data=training,geom="density")
+qplot(gyros_dumbbell_x,colour=classe,data=training,geom="density")
+qplot(gyros_dumbbell_y,colour=classe,data=training,geom="density")
+qplot(gyros_dumbbell_z,colour=classe,data=training,geom="density")
+qplot(accel_dumbbell_x,colour=classe,data=training,geom="density")
+qplot(accel_dumbbell_y,colour=classe,data=training,geom="density")
+qplot(accel_dumbbell_z,colour=classe,data=training,geom="density")
+qplot(magnet_dumbbell_x,colour=classe,data=training,geom="density")
+qplot(magnet_dumbbell_y,colour=classe,data=training,geom="density")
+qplot(magnet_dumbbell_z,colour=classe,data=training,geom="density")
+```
+
+# density plot forearm predictors by classe
+```{r cache=TRUE}
+qplot(roll_forearm,colour=classe,data=training,geom="density")
+qplot(pitch_forearm,colour=classe,data=training,geom="density")
+qplot(yaw_forearm,colour=classe,data=training,geom="density")
+qplot(total_accel_forearm,colour=classe,data=training,geom="density")
+qplot(gyros_forearm_x,colour=classe,data=training,geom="density")
+qplot(gyros_forearm_y,colour=classe,data=training,geom="density")
+qplot(gyros_forearm_z,colour=classe,data=training,geom="density")
+qplot(accel_forearm_x,colour=classe,data=training,geom="density")
+qplot(accel_forearm_y,colour=classe,data=training,geom="density")
+qplot(accel_forearm_z,colour=classe,data=training,geom="density")
+qplot(magnet_forearm_x,colour=classe,data=training,geom="density")
+qplot(magnet_forearm_y,colour=classe,data=training,geom="density")
+qplot(magnet_forearm_z,colour=classe,data=training,geom="density")
+```
+
+## histgrams - belt
+```{r cache=TRUE}
+with(training, hist(roll_belt))
+with(training, hist(pitch_belt))
+with(training, hist(yaw_belt))
+with(training, hist(total_accel_belt))
+with(training, hist(gyros_belt_x))
+with(training, hist(gyros_belt_y))
+with(training, hist(gyros_belt_z))
+with(training, hist(accel_belt_x))
+with(training, hist(accel_belt_y))
+with(training, hist(accel_belt_z))
+with(training, hist(magnet_belt_x))
+with(training, hist(magnet_belt_y))
+with(training, hist(magnet_belt_z))
+```
+
+## histgrams - arm
+```{r cache=TRUE}
+with(training, hist(roll_arm))
+with(training, hist(pitch_arm))
+with(training, hist(yaw_arm))
+with(training, hist(total_accel_arm))
+with(training, hist(gyros_arm_x))
+with(training, hist(gyros_arm_y))
+with(training, hist(gyros_arm_z))
+with(training, hist(accel_arm_x))
+with(training, hist(accel_arm_y))
+with(training, hist(accel_arm_z))
+with(training, hist(magnet_arm_x))
+with(training, hist(magnet_arm_y))
+with(training, hist(magnet_arm_z))
+```
+
+## histgrams - dumbbell
+```{r cache=TRUE}
+with(training, hist(roll_dumbbell))
+with(training, hist(pitch_dumbbell))
+with(training, hist(yaw_dumbbell))
+with(training, hist(total_accel_dumbbell))
+with(training, hist(gyros_dumbbell_x))
+with(training, hist(gyros_dumbbell_y))
+with(training, hist(gyros_dumbbell_z))
+with(training, hist(accel_dumbbell_x))
+with(training, hist(accel_dumbbell_y))
+with(training, hist(accel_dumbbell_z))
+with(training, hist(magnet_dumbbell_x))
+with(training, hist(magnet_dumbbell_y))
+with(training, hist(magnet_dumbbell_z))
+```
+
+## histgrams - forearm
+```{r cache=TRUE}
+with(training, hist(roll_forearm))
+with(training, hist(pitch_forearm))
+with(training, hist(yaw_forearm))
+with(training, hist(total_accel_forearm))
+with(training, hist(gyros_forearm_x))
+with(training, hist(gyros_forearm_y))
+with(training, hist(gyros_forearm_z))
+with(training, hist(accel_forearm_x))
+with(training, hist(accel_forearm_y))
+with(training, hist(accel_forearm_z))
+with(training, hist(magnet_forearm_x))
+with(training, hist(magnet_forearm_y))
+with(training, hist(magnet_forearm_z))
+```
+
+# summary - belt, arm, dumbbell, forearm
+```{r cache=TRUE}
+summary(training[8:20])
+summary(training[21:33])
+summary(training[34:46])
+summary(training[47:59])
+```
+
+# caret featurePlots - belt
+```{r cache=TRUE}
+featurePlot(x=training[,c("roll_belt","pitch_belt","yaw_belt")],
+            y=training$classe,
+            plot="pairs")
+featurePlot(x=training[,c("total_accel_belt","accel_belt_x","accel_belt_y","accel_belt_z")],
+            y=training$classe,
+            plot="pairs")
+featurePlot(x=training[,c("gyros_belt_x","gyros_belt_y","gyros_belt_z")],
+            y=training$classe,
+            plot="pairs")
+featurePlot(x=training[,c("magnet_belt_x","magnet_belt_y","magnet_belt_z")],
+            y=training$classe,
+            plot="pairs")
+```
 
 
-x <- c(1, 2, NA, 4, NA, 5)
-y <- c("a", NA, "b", "d", NA, "f")
+# caret featurePlots - arm
+```{r cache=TRUE}
+featurePlot(x=training[,c("roll_arm","pitch_arm","yaw_arm")],
+            y=training$classe,
+            plot="pairs")
+featurePlot(x=training[,c("total_accel_arm","accel_arm_x","accel_arm_y","accel_arm_z")],
+            y=training$classe,
+            plot="pairs")
+featurePlot(x=training[,c("gyros_arm_x","gyros_arm_y","gyros_arm_z")],
+            y=training$classe,
+            plot="pairs")
+featurePlot(x=training[,c("magnet_arm_x","magnet_arm_y","magnet_arm_z")],
+            y=training$classe,
+            plot="pairs")
+```
 
-good <- complete.cases(x,y)
+# caret featurePlots - dumbbell
+```{r cache=TRUE}
+featurePlot(x=training[,c("roll_dumbbell","pitch_dumbbell","yaw_dumbbell")],
+            y=training$classe,
+            plot="pairs")
+featurePlot(x=training[,c("total_accel_dumbbell","accel_dumbbell_x","accel_dumbbell_y","accel_dumbbell_z")],
+            y=training$classe,
+            plot="pairs")
+featurePlot(x=training[,c("gyros_dumbbell_x","gyros_dumbbell_y","gyros_dumbbell_z")],
+            y=training$classe,
+            plot="pairs")
+featurePlot(x=training[,c("magnet_dumbbell_x","magnet_dumbbell_y","magnet_dumbbell_z")],
+            y=training$classe,
+            plot="pairs")
+```
 
-x[good]
-y[good]
+# caret featurePlots - forearm
+```{r cache=TRUE}
+featurePlot(x=training[,c("roll_forearm","pitch_forearm","yaw_forearm")],
+            y=training$classe,
+            plot="pairs")
+featurePlot(x=training[,c("total_accel_forearm","accel_forearm_x","accel_forearm_y","accel_forearm_z")],
+            y=training$classe,
+            plot="pairs")
+featurePlot(x=training[,c("gyros_forearm_x","gyros_forearm_y","gyros_forearm_z")],
+            y=training$classe,
+            plot="pairs")
+featurePlot(x=training[,c("magnet_forearm_x","magnet_forearm_y","magnet_forearm_z")],
+            y=training$classe,
+            plot="pairs")
+```
 
+
+
+Here are the column numbers for each of the 4 sensor locations
+```{r cache=TRUE}
+names(training[8:20]) # belt
+names(training[21:33]) # arm
+names(training[34:46]) # dumbbell
+names(training[47:59]) # forearm
+
+```
+
+# Train options
+train parameters
+method
+data
+preProcess
+weights
+metric cat acc cont rmse
+
+train control
+method (resampling) boot boot632 cv repeatedcv LOOCV
+number (iterations)
+repeats
+p size of training
+initialWindow for time points
+horizon for time points
+savePredictions
+summaryFunction
+preProcOptions
+predictionBounds
+seeds
+allowParallel
+
+# Boosting
+
+# Model Fit
+```{r cache=TRUE}
+# library(caret)
+# library(doMC)
+# registerDoMC(4)
+# this took 6 hours!
+# Sys.time()
+# grid <- expand.grid(mtry=100)
+# fitControl <- trainControl(## 10-fold CV
+                           # method = "repeatedcv",
+                           # number = 10,
+                           # repeated ten times
+                           # repeats = 10)
+
+# modFit <- train(x=pmlTrain2[,8:59],y=pmlTrain2[,60],
+                # method="rf",
+                # prox=TRUE,
+                # tuneGrid = grid,
+                # trControl = fitControl)
+# Sys.time()
+# modFit
+```
+
+
+predictions <- predict(fitRF, newdata=pmlTest1)
 

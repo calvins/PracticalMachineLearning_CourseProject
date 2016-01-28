@@ -1,0 +1,471 @@
+---
+title: "Untitled"
+author: "Calvin Seto"
+date: "January 4, 2016"
+output: html_document
+---
+
+EDA
+* Principle 1: Show comparisons
+* Principle 2: Show causality, mechanism, explanation
+* Principle 3: Show multivariate data
+* Principle 4: Integrate multiple modes of evidence
+* Principle 5: Describe and document the evidence
+* Principle 6: Content is king
+
+EDA Goals
+* To understand data properties
+* To find patterns in data
+* To suggest modeling strategies
+* To "debug" analyses
+* To communicate results
+
+One dimension
+* Five-number summary
+* Boxplots
+* Histograms
+* Density plot
+* Barplot
+
+Two dimensions
+* Multiple/overlayed 1-D plots (Lattice/ggplot2)
+* Scatterplots
+* Smooth scatterplots
+
+> 2 dimensions
+* Overlayed/multiple 2-D plots; coplots
+* Use color, size, shape to add dimensions
+* Spinning plots
+* Actual 3-D plots (not that useful)
+
+Multi-panel with and without color
+* Boxplots
+* Histograms
+* Scatterplots
+
+Hierarchical Clustering
+K Means Clustering
+Principal Components Analysis
+
+
+-correct execution
+-automatic and robust detection of execution mistakes
+-how to provide feedback on the quality of execution to the user
+
+1-use machine learning and pattern recognition techniques to detect mistakes
+2-use a model-based approach and to compare motion traces recorded using ambient sensors to a formal specification of what constitutes correct exection
+
+degree to which a set of inherent characteristics fulfills requirements" [27] and Crosby [10] defines it as conformance to specifications". What these definitions have in common is the fact that one starts with a product specification and a quality inspector measures the adherence of the  final product to this specification. These definitions make it clear that in order to measure quality, a benchmark is needed to measure the quality of a product against, in this case its product specification.
+
+From this, we define quality as the adherence of the execu-
+tion of an activity to its specification. From this, we define
+a qualitative activity recognition system as a software arte-
+fact that observes the user's execution of an activity and
+compares it to a specification. Hence, even if there is not a
+single accepted way of performing an activity, if a manner
+of execution is specified, we can measure quality.
+
+GOAL: The best machine learning method - interpretable, simple, accurate, fast to train and test, scalable
+
+https://class.coursera.org/predmachlearn-033/forum/thread?thread_id=116
+Frank H. Jung advice
+1-determine what type of problem you are trying to solve-classification or regression
+2-look at a model that helps solve this type of problem
+3-look for R libraries that supports this model and any data preparation required
+4-satisfy the requirements of the rubric
+
+Summary
+```{r}
+summary(pmlTrain2)
+table(pmlTrain2$classe)
+```
+
+# Data Splitting
+```{r cache=TRUE}
+library(caret);
+inTrain <- createDataPartition(y=pmlTrain2$classe,
+                              p=0.75, list=FALSE)
+training <- pmlTrain2[inTrain,]
+testing <- pmlTrain2[-inTrain,]
+dim(training)
+```
+
+# Cross Validation
+```{r cache=TRUE}
+set.seed(32323)
+folds <- createFolds(y=pmlTrain2$classe,k=10,
+                             list=TRUE,returnTrain=TRUE)
+sapply(folds,length)
+
+folds[[1]][1:10]
+
+pmlTrain2[folds[[1]],]
+pmlTrain2[folds[[2]],]
+pmlTrain2[folds[[3]],]
+pmlTrain2[folds[[4]],]
+pmlTrain2[folds[[5]],]
+pmlTrain2[folds[[6]],]
+pmlTrain2[folds[[7]],]
+pmlTrain2[folds[[8]],]
+pmlTrain2[folds[[9]],]
+pmlTrain2[folds[[10]],]
+```
+
+
+# Cross Validation return test
+```{r cache=TRUE}
+set.seed(32323)
+folds <- createFolds(y=pmlTrain2$classe,k=10,
+                             list=TRUE,returnTrain=FALSE)
+sapply(folds,length)
+```
+
+# Resampling
+```{r cache=TRUE}
+set.seed(32323)
+folds <- createResample(y=pmlTrain2$classe,times=10,
+                             list=TRUE)
+sapply(folds,length)
+```
+
+
+```{r}
+head(pmlTrain2[8:20])
+head(pmlTrain2[21:33])
+head(pmlTrain2[34:46])
+head(pmlTrain2[47:59])
+form <- as.formula(paste(colnames(pmlTrain2)[60], "~", paste(colnames(pmlTrain2)[8:59], collapse="+"), sep=""))
+
+```
+
+
+CART
+```{r}
+library(caret)
+modFit <- train(form, method="rpart", data=pmlTrain2)
+print(modFit$finalModel)
+predict(modFit, newdata=pmlTest2)
+```
+
+Random Forest
+```{r}
+print(Sys.time())
+modFitRF <- train(form,data=pmlTrain2,method="rf",prox=TRUE)
+print(Sys.time())
+modFitRF
+```
+
+Random Forest package
+Random Forest prediction of Kyphosis data
+library(randomForest)
+fit <- randomForest(Kyphosis ~ Age + Number + Start,   data=kyphosis)
+print(fit) # view results 
+importance(fit) # importance of each predictor
+```{r}
+library(randomForest)
+set.seed(168)
+print(Sys.time())
+modFitRF2 <- randomForest(x=training[,1:(ncol(training)-1)],y=as.factor(training[,"classe"]), data=training, importance=TRUE, proximity=TRUE)
+print(Sys.time())
+print(modFitRF2)
+importance(modFitRF2)
+```
+
+columns for features
+user_name head(pmlTrain2[2])
+raw_timestamp_part_1 head(pmlTrain2[3])
+raw_timestamp_part_2 head(pmlTrain2[4])
+new_window head(pmlTrain2[6])
+num_window head(pmlTrain2[7])
+
+belt head(pmlTrain2[8:20])
+arm head(pmlTrain2[21:33])
+dumbbell head(pmlTrain2[34:46])
+forearm head(pmlTrain2[47:59])
+
+form <- as.formula(paste(colnames(pmlTrain2)[60], "~", paste(colnames(pmlTrain2)[8:59], collapse="+"), sep=""))
+
+```{r}
+form <- as.formula(paste(colnames(pmlTrain2)[60], "~", paste(colnames(pmlTrain2)[8:59], collapse="+"), sep=""))
+library(randomForest)
+set.seed(101)
+rf.pmlTrain2 <- randomForest(form, data=pmlTrain2)
+
+library(caret)
+modFit <- train(form, method="rpart", data=pmlTrain2)
+print(modFit$finalModel)
+predict(modFit, newdata=pmlTest2)
+
+print(Sys.time()) # "2015-12-11 13:55:40 EST"
+modFitRF <- train(form,data=pmlTrain2,method="rf",prox=TRUE)
+print(Sys.time()) # "2015-12-12 00:17:37 EST"
+# This model took more than 10 hours to train
+predict(modFitRF, newdata = pmlTest2)
+
+pml_write_files = function(x){
+n = length(x)
+for(i in 1:n){
+filename = paste0("problem_id_",i,".txt")
+write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+}
+}
+
+answers <- c("B","A","B","A","A","E","D","B","A","A","B","C","B","A","E","E","A","B","B","B")
+
+setwd("~/Dropbox/jhudatascience/8_Practical_Machine_Learning/submission")
+
+pml_write_files(answers)
+
+```
+
+I submitted these answers on Dec 15 TUE and got them all right.
+TODO
+Need to tune the model and decrease the training time from 10 hours
+
+
+```{r}
+form <- as.formula(paste(colnames(training)[60], "~", paste(colnames(training)[8:59], collapse="+"), sep=""))
+
+set.seed(101)
+fitControl <- trainControl(## 10-fold CV
+                           method = "repeatedcv",
+                           number = 10,
+                           ## repeated ten times
+                           repeats = 10)
+
+print(Sys.time()) #
+modFitRF <- train(form,data=training,method="rf",prox=TRUE, trControl = fitControl)
+print(Sys.time()) #
+
+
+```
+
+http://topepo.github.io/caret/training.html
+Example load package to access Sonar data; create training and testing datasets 75/25
+use trainControl to specify bootstrap and repeated cross-validation resampling in the train function and use a boosted tree model
+the model summary shows the number of samples, number of predictors, response, 
+resampling results across tuning parameters
+it shows Accuracy and Accuracy SD across cross-validation iterations
+```{r}
+library(mlbench)
+data(Sonar)
+str(Sonar[, 1:10])
+library(caret)
+set.seed(998)
+inTraining <- createDataPartition(Sonar$Class, p = .75, list = FALSE)
+training <- Sonar[ inTraining,]
+testing  <- Sonar[-inTraining,]
+fitControl <- trainControl(## 10-fold CV
+                           method = "repeatedcv",
+                           number = 10,
+                           ## repeated ten times
+                           repeats = 10)
+set.seed(825)
+gbmFit1 <- train(Class ~ ., data = training,
+                 method = "gbm",
+                 trControl = fitControl,
+                 ## This last option is actually one
+                 ## for gbm() that passes through
+                 verbose = FALSE)
+gbmFit1
+```
+
+train can preprocess the data and center data, scale data, impute data, apply the spatial sign transformation, and perform feature extraction via principal componenents analysis or independent component analysis
+
+
+
+
+https://class.coursera.org/predmachlearn-035/forum/thread?thread_id=2
+tuneGrid= a data frame with possible tuning values; columns are named the same as the tuning parameters
+mtry selects the number of predictors that get used at each node
+expand.grid creates a data frame from all combinations of the supplied vectors
+
+http://www.r-bloggers.com/how-to-go-parallel-in-r-basics-tips/
+good for bootstrapping, cross-validation, multivariate imputation by chained equations (MICE), and fitting multiple regression models
+lapply is handy for parallel processing
+use # of clusters = # of cores - 1
+
+```{r}
+library(parallel)
+no_cores <- detectCores() - 1
+c1 <- makeCluster(no_cores)
+parLapply(c1, 2:4, function(exponent) 2^exponent)
+stopCluster(c1)
+
+
+cacheParallel <- function(){
+  vars <- 1:2
+  tmp <- clusterEvalQ(cl, 
+                      library(digest))
+ 
+  parSapply(cl, vars, function(var){
+    fn <- function(a) a^2
+    dg <- digest(list(fn, var))
+    cache_fn <- 
+      sprintf("Cache_%s.Rdata", 
+              dg)
+    if (file.exists(cache_fn)){
+      load(cache_fn)
+    }else{
+      var <- fn(var); 
+      Sys.sleep(5)
+      save(var, file = cache_fn)
+    }
+    return(var)
+  })
+}
+```
+
+http://topepo.github.io/caret/parallel.html
+
+```{r}
+library(doMC)
+registerDoMC(cores = 2)
+## All subsequent models are then run in parallel
+model <- train(y ~ ., data = training, method = "rf")
+```
+
+
+https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf
+```{r}
+
+```
+
+
+ISLR Example
+```{r}
+library(randomForest)
+set.seed(101)
+rf.pmlTrain2 <- randomForest(form, data=pmlTrain2)
+rf.pmlTrain2
+```
+
+Regression
+```{r}
+modFitReg <- train(as.factor(classe) ~ ., data=training, method="lm")
+summary(modFitReg$finalModel)
+```
+
+
+```{r}
+pmlTrain1 <- read.csv("data/pml-training.csv", stringsAsFactors = FALSE, na.strings = c("#DIV/0!","","NA"))
+pmlTrain1MissingCounts <- sapply(pmlTrain1, function(x)sum(is.na(x)))
+colNamesTrain <- pmlTrain1MissingCounts[pmlTrain1MissingCounts==0]
+pmlTrain2 <- pmlTrain1[,names(colNamesTrain)]
+
+library(caret)
+
+inTrain <- createDataPartition(y=pmlTrain2$classe, p=0.6, list=FALSE)
+training <- pmlTrain2[inTrain,]
+testing <- pmlTrain2[-inTrain,]
+dim(training); dim(testing)
+
+# form <- as.formula(paste(colnames(pmlTrain2)[60], "~", paste(colnames(pmlTrain2)[8:59], collapse="+"), sep=""))
+
+fitControl <- trainControl(## 10-fold CV
+  method = "repeatedcv",
+  number = 10,
+  ## repeated ten times
+  repeats = 10)
+mtryGrid <- expand.grid(mtry=26)
+
+library(doMC)
+registerDoMC(cores = 2)
+
+print(Sys.time())
+# modFitRF <- train(form,data=training,method="rf",trControl=fitControl,tuneGrid=mtryGrid)
+modFitRF <- train(x=training[8:59],y=training$classe,data=training,method="rf",trControl=fitControl,tuneGrid=mtryGrid,allowParallel=TRUE)
+print(Sys.time())
+
+
+```
+
+Mac Mini Late 2012 2.3 GHz Intel Core i7 4 cores
+
+Macbook Pro Early 2015 2.9 GHz Intel Core i5 2 cores
+
+Windows 10 July 2013 2.4 GHz 4th Gen Intel Core i7-4700MQ 4 cores  
+
+steps to set up hosting on gh-pages
+1-set up your github repo locally and on github
+2-git branch gh-pages
+3-git checkout gh-pages
+4-git push origin gh-pages
+5-go to github and verify branches
+6-touch .nojekyll
+7-git add .nojekyll
+8-git commit -a -m "Added a .nojekyll file"
+9-git push origin gh-pages
+10-calvins.github.io/CourseProject/pmlReport.html
+
+model fit
+1-model RandomForest
+2-tuning parameter mtry
+Number of variables randomly sampled as candidates at each split. Note that the default values are different for classification (sqrt(p) where p is number of variables in x) and regression (p/3)
+3-resampling method - k-fold cv (once or repeated), loocv, or bootstrap (simple or 632 rule)
+4-review performance measures to adjust tuning parameters
+
+example from web site
+library(mlbench)
+data(Sonar)
+str(Sonar[, 1:10])
+library(caret)
+set.seed(998)
+inTraining <- createDataPartition(Sonar$Class, p = .75, list = FALSE)
+training <- Sonar[ inTraining,]
+testing  <- Sonar[-inTraining,]
+fitControl <- trainControl(## 10-fold CV
+                           method = "repeatedcv",
+                           number = 10,
+                           ## repeated ten times
+                           repeats = 10)
+# this takes about 20 sec                           
+Sys.time()
+set.seed(825)
+gbmFit1 <- train(Class ~ ., data = training,
+                 method = "gbm",
+                 trControl = fitControl,
+                 ## This last option is actually one
+                 ## for gbm() that passes through
+                 verbose = FALSE)
+Sys.time()
+gbmFit1
+
+
+library(randomForest)
+x <- cbind(x_train,y_train)
+# Fitting model
+fit <- randomForest(Species ~ ., x,ntree=500)
+summary(fit)
+#Predict Output 
+predicted= predict(fit,x_test)
+
+Sys.time()
+fit <- randomForest(x=pmlTrain2[,8:59],y=as.factor(pmlTrain2[,60]),data=pmlTrain2,ntree=500)
+Sys.time()
+
+predicted= predict(fit,pmlTest1)
+predicted
+
+# just some code that verifies pml data set is the same variables as wle data set
+This is the dataset from the study web site and not from the PML course
+It has 39242 obs of 159 variables
+The PML course training set has 19,622 observations of 160 variables. 
+The PML course test set has 20 observations of 160 variables.
+
+researchers used sliding windows to calculate features like mean, variance, standard deviation, max, min, amplitude, kurtosis, and skewness.
+Then they used feature selection algorithm based on correlation proposed by Hall
+algorithm was configured for best first strategy based on backtracking (a minimal total cost feature selection on the neighborhood model with pruning techniques)
+this resulted in selecting 17 features for use in the model
+
+Julian comment
+The sparse columns have been added by the team who collected the data. You don't need to use them. They are summaries of the time slices that were taken for their own machine learning process. See the variable new_window (Yes or No). The sparse columns only have a value in rows new_window == "Yes".
+for example, kurtosis roll belt has a number when new_window = yes
+
+wle <- read.csv("data/WearableComputing_weight_lifting_exercises_biceps_curl_variations.csv")
+pmlTrain0 <- read.csv("data/pml-training.csv")
+temp <- as.data.frame(names(wle))
+temp <- rbind(temp,c("classe"))
+temp$pml <- c(names(pmlTrain0)[2:160],"classe")
+sum(temp[,1]==temp[,2])
+

@@ -1,0 +1,141 @@
+---
+title: "Untitled"
+author: "Calvin Seto"
+date: "January 4, 2016"
+output: html_document
+---
+
+TODO
+Course Project
+
+There are 5 classe values
+A exactly according to the specification
+B throwing the elbows to the front
+C lifting the dumbbell only halfway
+D lowering the dumbbell only halfway
+E throwing the hips to the front
+
+QUESTION-The goal of the course project is given a set of training data, create a model that will predict what classe of exercise each test case is
+
+-use any of the variables to predict with
+-write a report describing how you built the model
+how you used cross validation
+what you think the expected out of sample error is
+why you made the choices you did
+
+-constrain the text of the write up to < 2,000 words
+and the number of figures to < 5
+-make a repo with a gh-pages branch so the compiled HTML file can be viewed online
+
+DATA
+## Data Cleansing
+When processing the data file the first time, we found 1,287,472 missing values.  The second try reading the data file identified 1,925,102 missing values.  We wrote a custom function to count the missing values in each column and save them to a vector.  Using this vector, we created a vector of column indices where the missing values count was zero, or where the column had no missing data.  This reduced the 160 variables down to 60 variables which have no missing data.
+
+X is just a row number, 
+user_name 6 users unique(pmlTrain2$user_name) "carlitos" "pedro"    "adelmo"   "charles"  "eurico"   "jeremy" 
+raw_timestamp_part_1 these look like epoch date and time values
+raw_timestamp_part_2
+cvtd_timestamp
+new_window no or yes values
+num_window 1-864 windows
+13 belt features
+13 arm features
+13 dumbbell features
+13 forearm features
+
+```{r cache=TRUE, echo=FALSE}
+library(knitr)
+a <- c("A","exactly according to the specification")
+b <- c("B","throwing the elbows to the front")
+c <- c("C","lifting the dumbbell only halfway")
+d <- c("D","lowering the dumbbell only halfway")
+e <- c("E","throwing the hips to the front")
+table1 <- as.data.frame(rbind(a,b,c,d,e))
+names(table1) <- c("Class", "Description")
+row.names(table1) <- c("A","B","C","D","E")
+kable(table1,row.names = FALSE, caption = "Table 1 - Descriptions of each exercise")
+```
+
+```{r cache=TRUE, echo=FALSE}
+library(knitr)
+counts <- c("4,185","2,848","2,567","2,412","2,706")
+table2 <- as.data.frame(rbind(counts))
+names(table2) <- c("A","B","C","D","E")
+row.names(table2) <- c("counts")
+kable(table2, row.names = FALSE, caption = "Table 2 - Counts of each exercise in the training set")
+```
+
+```{r cache=TRUE, echo=FALSE, message=FALSE}
+library(caret)
+
+setwd("~/Dropbox/jhudatascience/8_Practical_Machine_Learning/CourseProject")
+
+# setwd("C:/Users/Calvin/Calvinsbiz/Dropbox/jhudatascience/8_Practical_Machine_Learning/CourseProject")
+
+pmlTrain1 <- read.csv("data/pml-training.csv", stringsAsFactors = FALSE, na.strings = c("#DIV/0!","","NA"))
+
+pmlTrain1MissingCounts <- sapply(pmlTrain1, function(x)sum(is.na(x)))
+pmlTrain1Complete <- pmlTrain1MissingCounts[pmlTrain1MissingCounts==0]
+pmlTrain2 <- pmlTrain1[,names(pmlTrain1Complete)]
+
+inTrain <- createDataPartition(y=pmlTrain2$classe,
+                              p=0.75, list=FALSE)
+training <- pmlTrain2[inTrain,]
+testing <- pmlTrain2[-inTrain,]
+
+predictors <- training[,8:59]
+outcome <- as.factor(training[,60])
+
+# configure parallel
+library(parallel)
+library(doParallel)
+cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
+
+
+# seed
+set.seed(168)
+
+# default is bootstrap
+fitRFControl <- trainControl(method="cv",
+                             number=10
+)
+
+# fitRFGrid <- expand.grid(mtry=
+# )
+
+"Start Time "; Sys.time()
+fitRF <- train(x=predictors,
+             y=outcome,
+             data=training,
+             method="rf",
+             trControl=fitRFControl
+)
+"End Time "; Sys.time()
+
+stopCluster(cluster)
+
+# show model summary
+fitRF
+```
+
+```{r cache=TRUE, echo=FALSE}
+# Make predictions and make table
+predictions <- predict(fitRF, newdata=testing)
+
+# create confusiion matrix
+confusionMatrix(predictions, testing$classe)
+```
+
+```{r cache=TRUE, echo=FALSE}
+library(knitr)
+counts1 <- c("1,395","949","855","804","901")
+counts2 <- c("1,393","948","846","793","900")
+counts3 <- c("2","1","9","11","1")
+table3 <- as.data.frame(rbind(counts1,counts2,counts3))
+names(table3) <- c("A","B","C","D","E")
+row.names(table3) <- c("counts1","counts2","counts3")
+kable(table3, row.names = FALSE, caption = "Table 3 - Comparision of exercise counts prediction vs testing set")
+```
+
+

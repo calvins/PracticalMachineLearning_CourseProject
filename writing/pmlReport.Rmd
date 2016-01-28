@@ -1,21 +1,133 @@
 ---
-title: "pmlReport"
+title: "Predicting the Correct Execution of Weight Lifting Exercises"
 author: "Calvin Seto"
-date: "November 5, 2015"
+date: "January 4, 2016"
 output: html_document
 ---
 
-TODO
-Course Project
--The goal of the course project is given a set of training data, create a model that will predict what classe of exercise each test case is
--use any of the variables to predict with
--write a report describing how you built the model
-how you used cross validation
-what you think the expected out of sample error is
-why you made the choices you did
+# Introduction
 
--constrain the text of the write up to < 2,000 words
-and the number of figures to < 5
--make a repo with a gh-pages branch so the compiled HTML file can be viewed online
+What a wonderful, modern world we live in today where technology has permeated so many aspects of our lives including health and fitness.  We have many options to choose from to collect data about personal activities.  But, we can do better than just saving and viewing this information.  We can create a prediction model which learns from our data and foresees the outcomes of interesting questions we think of.  This paper will describe how I implemented this process using weight lifting exercise data.  I try to predict how well each subject performed the exercise and which typical mistake was performed out of four mistakes.
 
+Six participants were asked to perform dumbbell lifts five different ways as described in the following table.
+
+Class|Description
+-----|-----------
+A|exactly according to the specification
+B|throwing the elbows to the front
+C|lifting the dumbbell only halfway
+D|lowering the dumbbell only halfway
+E|throwing the hips to the front
+
+Accelerometers were placed on their belt, forearm, arm and dumbbell to collect the activity data.
+
+# The Data Set
+## Data Processing
+The original data set contains variables that the researchers needed to compute their own features using sliding windows and a feature selection algorithm based on correlation and backtracking.  This resulted in missing values, Excel divide by zero errors, and sparse columns.  I handled these values using R’s read.csv function and the stringsAsFactors and na.strings arguments.
+
+To handle the sparse columns, I created an R function that computes the number of missing values for each variable.  Using the missing value counts, I created new data frames with a subset of columns that do not have any missing values and the rest of the observations in the training and testing sets.
+
+This reduced the number of variables from 160 to 60.  I also discarded 7 of the 60 variables because they were not helpful for prediction since they are the observation number, user name, time stamps, and sliding window data.  The final set of 53 variables comprised of the same 13 variables (roll, pitch, yaw, total acceleration, and accelerometer, gyroscope and magnetometer readings on the x, y, and z axes) collected at the 4 locations (belt, arm, forearm, and dumbbell) and the outcome variable classe.
+
+## Exploratory Data Analysis
+Using only the training set, I created summaries of these 52 features to get a quick look at the feature names and range of values.  They all appear to be random real numbers positive, negative and zero.  I created histograms for each and noticed skewed data for magnet_belt_x, y, and z, magnet_arm_z, roll and pitch and accelerometer and gyroscope x, y, and z _dumbbell, magnetometer dumbbell x, y, and z, and gyroscope forearm x,y, and z.
+I also used caret’s featurePlot function to see interactions between some groups of features collected at each location.
+I created density plots for the 52 variables colored by the classe outcome variable.
+I also created a table of the counts of each exercise in the training set and it shows most of the observations fall in class A, according to specification, while the rest are approximately evenly distributed amongst the typical mistake classes B to E.
+
+# Choosing the Prediction Model
+As far as I could tell, the exploratory data analysis did not show any imbalance between the outcome and predictors, outliers, or data that is unexplained by predictors.  Transforming the skewed variables is more useful for regression and not classification which is the purpose of this project.  So, I chose to create a model using all 52 features to predict the classe outcome.
+
+## Choosing a classification algorithm
+There are many classification algorithms to consider such as linear regression, logistic regression, linear discriminant analysis, classification trees, bagging, random forests, boosting, and support vector machines.
+
+This problem involves five classes and contains an adequate sample size and number of predictors.  Linear regression and logistic regression are fine for two class problems, while early classification algorithms like linear discriminant analysis and classification trees are not as accurate as the ensemble methods of bagging, random forests, and boosting.  Support vector machines may not be as interpretable as the others.  I chose random forests because it reduces the variance in the data by averaging the observations in the data set.  Additionally, it decorrelates the decision trees by randomly selecting predictors used to decide a split in the tree.  Random forests is a state of the art ensemble classification algorithm and has been successful in many Kaggle competitions.
+
+# Training the Prediction Model
+I used the caret R package to split the data into training and testing sets with a 75%/25% split.  I chose K fold cross validation where K = 10 to balance the bias/variance trade-off of the sampled data.  I implemented this with caret’s trainControl function.  I used the parallel and doParallel packages to take advantage of the 4 cores in the Intel Core i7 processor in my Late 2012 Mac mini desktop with 16GB of memory.  Training time was about 9 minutes.
+
+The random forest algorithm uses the parameter mtry or the number of variables randomly sampled as candidates at each split.  The final model used mtry = 27 with an accuracy of 0.9927983.
+
+```
+Random Forest 
+ 
+14718 samples
+52 predictor
+5 classes: 'A', 'B', 'C', 'D', 'E' 
+
+No pre-processing
+Resampling: Cross-Validated (10 fold) 
+Summary of sample sizes: 13246, 13246, 13247, 13247, 13246, 13246, ... 
+Resampling results across tuning parameters:
+ 
+  mtry  Accuracy   Kappa      Accuracy SD  Kappa SD   
+   2    0.9917790  0.9895995  0.001878817  0.002378312
+  27    0.9927983  0.9908895  0.001815710  0.002297312
+  52    0.9855284  0.9816920  0.002352150  0.002975905
+
+Accuracy was used to select the optimal model using  the largest value.
+The final value used for the model was mtry = 27.
+
+Random Forest Model Training Summary
+
+```
+
+
+# Expected Out of Sample Error
+I made predictions using this model on the 4,904 observations in the hold out testing set.  Caret’s confusionMatrix function produces the expected out of sample error to help us see the performance of my classification model.
+
+```
+Confusion Matrix and Statistics
+
+       Reference
+ Prediction    A    B    C    D    E
+          A 1393    6    0    0    0
+          B    1  941    0    1    3
+          C    0    2  853    6    0
+          D    0    0    2  797    1
+          E    1    0    0    0  897
+
+Overall Statistics
+                                     
+            Accuracy : 0.9953        
+              95% CI : (0.993, 0.997)
+ No Information Rate : 0.2845        
+ P-Value [Acc > NIR] : < 2.2e-16     
+                                     
+               Kappa : 0.9941        
+ Mcnemar's Test P-Value : NA            
+
+Statistics by Class:
+
+                  Class: A Class: B Class: C Class: D Class: E
+Sensitivity            0.9986   0.9916   0.9977   0.9913   0.9956
+Specificity            0.9983   0.9987   0.9980   0.9993   0.9998
+Pos Pred Value         0.9957   0.9947   0.9907   0.9963   0.9989
+Neg Pred Value         0.9994   0.9980   0.9995   0.9983   0.9990
+Prevalence             0.2845   0.1935   0.1743   0.1639   0.1837
+Detection Rate         0.2841   0.1919   0.1739   0.1625   0.1829
+Detection Prevalence   0.2853   0.1929   0.1756   0.1631   0.1831
+Balanced Accuracy      0.9984   0.9952   0.9978   0.9953   0.9977
+
+Random Forest Model Confusion Matrix
+```
+
+The model has an accuracy of 0.9953 with a 95% Confidence Interval of (0.993, 0.997) and P-Value of 2.2e-16.
+
+The output also shows the sensitivity and specificity for each class which helps us measure how well the model correctly predicts the actual exercise type and how well the model does not predict the exercise type of an observation that is a different exercise type.  It tells use the true positive and true negative performance of the model.  These numbers for all the classes are 99% or higher.
+
+For most of the classes, the output shows positive and negative predictive values that reflects the probability that a true positive/true negative is correct given knowledge about the prevalence of classes within the population.  All of these values for each class is 99% or higher showing the probability that a true positive/true negative is correct given knowledge about the prevalence of classes.
+
+# Conclusion
+My prediction model correctly classified 1,393 A, 941 B, 853 C, 797 D, and 897 E observations and misclassified 2 A, 8 B, 2 C, 7 D, and 4 E observations.
+
+A very good colleague that we all know recommends five attributes of the “best” machine learning method; interpretable, simple, accurate, fast, and scalable.
+
+My model is simple and interpretable; it learned from weight lifting exercise data of five exercises, using a common, effective random forest algorithm to group observations into five classes
+
+The model is accurate with a greater than 99% accuracy on 4,904 observations in a hold out testing set.
+
+My model is fast, needing about 9 minutes to run on a fairly powerful modern desktop.
+
+The model is scalable, using R code which can easily be migrated to a computer cluster environment composed of commodity servers.
 
