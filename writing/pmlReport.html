@@ -127,7 +127,9 @@ img {
 </div>
 <div id="training-the-prediction-model" class="section level1">
 <h1>Training the Prediction Model</h1>
-<p>I used the caret R package to split the data into training and testing sets with a 75%/25% split. I chose K fold cross validation where K = 10 to balance the bias/variance trade-off of the sampled data. I implemented this with caret’s trainControl function. I used the parallel and doParallel packages to take advantage of the 4 cores in the Intel Core i7 processor in my Late 2012 Mac mini desktop with 16GB of memory. Training time was about 9 minutes.</p>
+<p>It’s well known that the accuracy on the training set is optimistic and a better estimate of error comes from an independent testing set. The cross validation technique helps us calculate the out of sample error from a hold out testing set. Cross validation can also help pick variables in the model, choose the type of prediction function, as well as the function’s tuning parameters, and compare different predictors.</p>
+<p>I used the caret R package to split the training data into training and testing sets with a 75%/25% split. When training my prediction model, caret’s trainControl function helps me choose K-fold cross validation with K = 10 to balance the bias/variance trade-off of the sampled data.</p>
+<p>I used the parallel and doParallel packages to take advantage of the 4 cores in the Intel Core i7 processor in my Late 2012 Mac mini desktop with 16GB of memory. Training time was about 9 minutes.</p>
 <p>The random forest algorithm uses the parameter mtry or the number of variables randomly sampled as candidates at each split. The final model used mtry = 27 with an accuracy of 0.9927983.</p>
 <pre><code>Random Forest 
  
@@ -153,7 +155,7 @@ Random Forest Model Training Summary
 </div>
 <div id="expected-out-of-sample-error" class="section level1">
 <h1>Expected Out of Sample Error</h1>
-<p>I made predictions using this model on the 4,904 observations in the hold out testing set. Caret’s confusionMatrix function produces the expected out of sample error to help us see the performance of my classification model.</p>
+<p>Caret’s confusionMatrix function produces the expected out of sample error to help us see the performance of my classification model. First, I made predictions using my random forest model on the 4,904 observations in the hold out testing set. Then I passed these predictions and the “truth” or the testing set’s classe outcome variable to caret’s confusionMatrix function producing this output.</p>
 <pre><code>Confusion Matrix and Statistics
 
        Reference
@@ -187,15 +189,15 @@ Detection Prevalence   0.2853   0.1929   0.1756   0.1631   0.1831
 Balanced Accuracy      0.9984   0.9952   0.9978   0.9953   0.9977
 
 Random Forest Model Confusion Matrix</code></pre>
-<p>The model has an accuracy of 0.9953 with a 95% Confidence Interval of (0.993, 0.997) and P-Value of 2.2e-16.</p>
+<p>My prediction model has an accuracy of 0.9953 with a 95% Confidence Interval of (0.993, 0.997) and P-Value of 2.2e-16. I expect the out of sample error rate to be 99% on a new sample of data.</p>
 <p>The output also shows the sensitivity and specificity for each class which helps us measure how well the model correctly predicts the actual exercise type and how well the model does not predict the exercise type of an observation that is a different exercise type. It tells use the true positive and true negative performance of the model. These numbers for all the classes are 99% or higher.</p>
-<p>For most of the classes, the output shows positive and negative predictive values that reflects the probability that a true positive/true negative is correct given knowledge about the prevalence of classes within the population. All of these values for each class is 99% or higher showing the probability that a true positive/true negative is correct given knowledge about the prevalence of classes.</p>
+<p>The output shows positive and negative predictive values that reflects the probability that a true positive/true negative is correct given knowledge about the prevalence of classes within the population. All of these values for each class is 99% or higher showing the probability that a true positive/true negative is correct given knowledge about the prevalence of classes.</p>
 </div>
 <div id="conclusion" class="section level1">
 <h1>Conclusion</h1>
-<p>My prediction model correctly classified 1,393 A, 941 B, 853 C, 797 D, and 897 E observations and misclassified 2 A, 8 B, 2 C, 7 D, and 4 E observations.</p>
-<p>A very good colleague that we all know recommends five attributes of the “best” machine learning method; interpretable, simple, accurate, fast, and scalable.</p>
-<p>My model is simple and interpretable; it learned from weight lifting exercise data of five exercises, using a common, effective random forest algorithm to group observations into five classes</p>
+<p>My prediction model correctly classified 1,393 A, 941 B, 853 C, 797 D, and 897 E observations and misclassified 2 A, 8 B, 2 C, 7 D, and 4 E observations. Of the 4,904 observations in the testing set, it got 4,881 correct and 23 wrong.</p>
+<p>A very good colleague that we all know recommends five attributes of the “best” machine learning method; it is interpretable, simple, accurate, fast, and scalable.</p>
+<p>My model is simple and interpretable; it learned from weight lifting exercise data of five exercises, using a common, effective random forest algorithm to group observations into five classes.</p>
 <p>The model is accurate with a greater than 99% accuracy on 4,904 observations in a hold out testing set.</p>
 <p>My model is fast, needing about 9 minutes to run on a fairly powerful modern desktop.</p>
 <p>The model is scalable, using R code which can easily be migrated to a computer cluster environment composed of commodity servers.</p>
