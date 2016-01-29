@@ -197,11 +197,11 @@ The 20 feature model correctly classified 1,390 A, 930 B, 846 C, 795 D, and 896 
 
 A very good colleague that we all know recommends five attributes of the “best” machine learning method; it is interpretable, simple, accurate, fast, and scalable.
 
-My model is simple and interpretable; it learned from weight lifting exercise data of five exercises, using a common, effective random forest algorithm to group observations into five classes.
+My model is simple and interpretable; it learned from twenty predictors of weight lifting exercise data of five exercises, using a common, effective random forest algorithm to group observations into five classes.
 
 The model is accurate with a greater than 99% accuracy on 4,904 observations in a testing set.
 
-My model is fast, needing about 3 to 9 minutes to run on a fairly powerful modern desktop.
+My model is fast, needing about 3 minutes to run on a fairly powerful modern desktop.
 
 The model is scalable, using R code which can easily be migrated to a computer cluster environment composed of commodity servers.
 
