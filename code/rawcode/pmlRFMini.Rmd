@@ -5,7 +5,6 @@ date: "January 14, 2016"
 output: html_document
 ---
 
-# Random Forest
 mtry = number of variables randomly sampled as candidates at each split
 Defaults: Classification sqrt(p) Regression p/3 where p = number of variables
 
@@ -62,15 +61,77 @@ stopCluster(cluster)
 # show model summary
 fitRF
 
+# see variable importance of fitRF
+varImp(fitRF, scale=FALSE)
+
+# use top 20 important variables
+impPredictors <- training[,c("roll_belt","pitch_forearm","yaw_belt","magnet_dumbbell_z","magnet_dumbbell_y","pitch_belt","roll_forearm","accel_dumbbell_y","accel_forearm_x","magnet_dumbbell_x","roll_dumbbell","magnet_belt_z","magnet_forearm_z","accel_dumbbell_z","total_accel_dumbbell","accel_belt_z","magnet_belt_y","gyros_belt_z","magnet_belt_x","yaw_arm")]
+
+# configure parallel
+library(parallel)
+library(doParallel)
+cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
+
+
+# seed
+set.seed(168)
+
+# default is bootstrap
+fitRFControl <- trainControl(method="cv",
+                             number=10
+)
+
+# fitRFGrid <- expand.grid(mtry=
+# )
+
+"Start Time "; Sys.time()
+fitImpRF <- train(x=impPredictors,
+             y=outcome,
+             data=training,
+             method="rf",
+             trControl=fitRFControl
+)
+"End Time "; Sys.time()
+
+stopCluster(cluster)
+
+# show model summary
+fitImpRF
+
 # What is this for?
 # it seems to show all folds and accuracy, Kappa, and fold number for cross-validation process
 # fitRF$resample
 
-# Make predictions and make table
+# load testing set
+pmlTest0 <- read.csv("data/pml-testing.csv")
+pmlTest0MissingCounts <- sapply(pmlTest0, function(x)sum(is.na(x)))
+colNamesTest <- pmlTest0MissingCounts[pmlTest0MissingCounts==0]
+pmlTest1 <- pmlTest0[,names(colNamesTest)]
+
+# Make predictions with 52 feature model
 predictions <- predict(fitRF, newdata=testing)
 
-# create confusion matrix
+# create confusion matrix with 52 feature model
 confusionMatrix(predictions, testing$classe)
+
+# predict on testing set
+predictionsFinal <- predict(fitRF, newdata=pmlTest1)
+
+# Make predictions with 20 feature model
+impPredictions <- predict(fitImpRF, newdata=testing)
+
+# create confusion matrix with 20 feature model
+confusionMatrix(impPredictions, testing$classe)
+
+# predict on testing set
+impPredictionsFinal <- predict(fitImpRF, newdata=pmlTest1)
+
+answers <- as.factor(c("B","A","B","A","A","E","D","B","A","A","B","C","B","A","E","E","A","B","B","B"))
+
+all.equal(predictionsFinal,answers)
+
+all.equal(impPredictionsFinal,answers)
 
 # this creates confusion matrix also
 # testing$predRight <- predictions==testing$classe
@@ -88,13 +149,6 @@ confusionMatrix(predictions, testing$classe)
 # confusion <- as.data.frame(as.table(input.matrix))
 # plot <- ggplot(confusion)
 # plot + geom_tile(aes(x=Var1, y=Var2, fill=Freq)) + scale_x_discrete(name="Actual Class") + scale_y_discrete("Predicted Class") + scale_fill_gradient(breaks=seq(from=-.5, to=4, by=.2)) + labs(fill="Normalized\nFrequency")
-
-pmlTest0 <- read.csv("data/pml-testing.csv")
-pmlTest0MissingCounts <- sapply(pmlTest0, function(x)sum(is.na(x)))
-colNamesTest <- pmlTest0MissingCounts[pmlTest0MissingCounts==0]
-pmlTest1 <- pmlTest0[,names(colNamesTest)]
-
-predictionsFinal <- predict(fitRF, newdata=pmlTest1)
 
 ```
 
